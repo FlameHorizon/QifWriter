@@ -38,6 +38,43 @@ public class QifWriterTests
     }
 
     [Fact]
+    public void WriteFile_WhenCalled_WritesFileToDiskWithoutSubTransactions()
+    {
+        // Arrange
+        var fileSystem = new MockFileSystem();
+        var writer = new QifWriter(fileSystem);
+
+        var transactions = new[]
+        {
+            new QifTransaction
+            {
+                Type = QifTransactionType.Checking,
+                Date = DateOnly.Parse("2021-01-01"),
+                Amount = 100.50m,
+                Payee = "Test Payee",
+                Category = "Test Category",
+                Memo = "Test Memo"
+            }
+        };
+
+        // Act
+        writer.WriteFile("test.qif", transactions);
+
+        // Assert
+        fileSystem.FileExists("test.qif").Should().BeTrue();
+
+        string fileContents = fileSystem.File.ReadAllText("test.qif");
+        fileContents.Should().Contain($"Type:{transactions.First().Type.GetType().Name}")
+            .And.Contain($"D:{transactions.First().Date:yyyy-MM-dd}")
+            .And.Contain("T:100.50")
+            .And.Contain("P:Test Payee")
+            .And.Contain("L:Test Category")
+            .And.Contain("M:Test Memo")
+            .And.Contain("^");
+    }
+
+    
+    [Fact]
     public void WriteFile_WhenCalled_WritesFileToDisk()
     {
         // Arrange
